@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferramenta de Identificação de Fantasmas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #1a1a1a;
+            color: #f5f5f5;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        h2 {
+            margin: 15px 0 10px;
+            color: #e6c068;
+            border-bottom: 1px solid #e6c068;
+            padding-bottom: 5px;
+            font-size: 1.2em;
+        }
+        
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .content-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .evidence-ghost-container {
+            flex: 2;
+            display: flex;
+            gap: 15px;
+        }
+        
+        .notes-container {
+            flex: 1;
+        }
+        
+        .section {
+            background-color: #2a2a2a;
+            padding: 12px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .evidence-section, .ghost-section {
+            flex: 1;
+        }
+        
+        .buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .evidence-btn, .ghost-btn {
+            background-color: #e6c068;
+            color: #2c2c2c;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85em;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        
+        .evidence-btn:hover, .ghost-btn:hover {
+            background-color: #d4b258;
+        }
+        
+        .evidence-btn.selected {
+            background-color: #8bc34a;
+        }
+        
+        .evidence-btn.excluded {
+            background-color: #f44336;
+            text-decoration: line-through;
+        }
+        
+        .ghost-btn.selected {
+            background-color: #2196f3;
+            color: white;
+        }
+        
+        .ghost-btn.greyed-out {
+            background-color: #666;
+            color: #aaa;
+        }
+        
+        .ghost-btn.crossed-out {
+            background-color: #444;
+            color: #777;
+            text-decoration: line-through;
+        }
+        
+        .info-panel {
+            padding: 12px;
+            background-color: #2a2a2a;
+            border-radius: 5px;
+            height: 200px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            overflow-y: auto;
+            user-select: none;
+        }
+        
+        .placeholder {
+            color: #888;
+            font-style: italic;
+            text-align: center;
+            margin-top: 80px;
+        }
+        
+        .info-content h3 {
+            color: #e6c068;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        .info-content p {
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        
+        .notes-textarea {
+            width: 100%;
+            height: 300px;
+            background-color: #2a2a2a;
+            color: #f5f5f5;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 0.9em;
+            user-select: text;
+        }
+        
+        @media (max-width: 900px) {
+            .content-row, .evidence-ghost-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="content-row">
+            <div class="evidence-ghost-container">
+                <div class="section evidence-section">
+                    <h2>Evidências</h2>
+                    <div class="buttons-container" id="evidence-container"></div>
+                </div>
+                
+                <div class="section ghost-section">
+                    <h2>Fantasmas</h2>
+                    <div class="buttons-container" id="ghosts-container"></div>
+                </div>
+            </div>
+            
+            <div class="notes-container">
+                <div class="section">
+                    <h2>Anotações</h2>
+                    <textarea class="notes-textarea" id="notes-textarea" placeholder="Escreva suas anotações aqui..."></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section info-panel">
+            <div class="placeholder" id="default-placeholder">Passe o mouse sobre os nomes de evidências ou fantasmas para ver informações aqui</div>
+            <div id="info-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // Dados das evidências
+        const evidenceData = {
+            "Projetor de Laser": "Fantasmas com evidência de Projetor de Laser tornam-se ligeiramente visíveis ao passar por um projetor de laser. Para identificar esta evidência, é recomendado usar uma câmera de vídeo, pois facilita a detecção da presença do fantasma.",
+            "Impressão Digital": "Uma Impressão Digital (também referida como pegadas ou impressões digitais) deve ser descoberta usando uma luz negra. Impressões digitais aparecem após o fantasma interagir com objetos, e normalmente aparecem em portas, janelas, paredes e linhas de sal perturbadas.",
+            "Caixa de Espíritos": "A evidência da Caixa de Espíritos pode ser encontrada quando o fantasma usa a Caixa de Espíritos para se comunicar com os caçadores de fantasmas. Para usar a Caixa de Espíritos, os caçadores devem estar em uma sala com o fantasma presente e as luzes apagadas.",
+            "EMF Nível 5": "EMF Nível 5 (ou simplesmente EMF 5) pode ser encontrado usando o Leitor EMF. Para que o EMF Nível 5 seja ativado, o leitor deve estar muito perto da fonte até atingir seu máximo.",
+            "Orbe Fantasma": "Um orbe fantasma está presente apenas na sala do fantasma e só pode ser visualizado através do Monitor de Vídeo com outro caçador usando uma Câmera Montada na Cabeça ou trazendo uma Câmera de Vídeo, e também olhando através da própria Câmera de Vídeo.",
+            "Temperaturas Congelantes": "Temperaturas Congelantes (ou simplesmente Temp. Congelantes) podem ser vistas através de um termômetro onde, se as temperaturas chegarem abaixo de 0°C ou 32°F, é contado como congelante.",
+            "Murchar": "Após um certo período de tempo, o fantasma começará a causar passivamente o apodrecimento de partes do mapa, onde o metal enferrujará e as pinturas se distorcerão. Quando um fantasma com evidência de Murchar interage com as flores no Vaso de Flores, elas murcham e morrem.",
+            "Escrita Fantasma": "A evidência de Escrita Fantasma aparece quando um fantasma escreve em um Livro de Escrita Fantasma. O fantasma deve estar perto do livro para escrever nele."
+        };
+
+        // Dados dos fantasmas
+        const ghostData = {
+            "Aswang": {
+                evidence: ["Murchar", "EMF Nível 5", "Escrita Fantasma"],
+                description: "Aswangs historicamente só foram relatados nas Filipinas e áreas circundantes, mas recentemente têm sido cada vez mais comuns em escala global. São criaturas vampíricas fortalecidas pela morte com aparentemente nenhum desejo além de atacar pessoas. A velocidade do Aswang aumenta cada vez que eles matam. Andar através do sal os desacelera."
+            },
+            "Banshee": {
+                evidence: ["Orbe Fantasma", "Impressão Digital", "Temperaturas Congelantes"],
+                description: "Banshees são caracterizadas como arautos da morte e falência. Elas mais comumente se manifestam como espíritos lamentadores e tristes, ocupando espaços onde o infortúnio está prestes a ocorrer. Seja menos cauteloso com elas, e mais cauteloso com o que elas podem estar avisando. Banshees são mais propensas a quebrar vidro. Elas podem usar um lamento distinto ao caçar."
+            },
+            "Demônio": {
+                evidence: ["EMF Nível 5", "Impressão Digital", "Temperaturas Congelantes"],
+                description: "USE EXTREMA CAUTELA AO INTERAGIR COM UM DEMÔNIO! ELES SÃO EXTREMAMENTE HOSTIS E PERIGOSOS! DEMÔNIOS CAÇAM FREQUENTEMENTE. CRUCIFIXOS SÃO MAIS EFETIVOS CONTRA ELES."
+            },
+            "Dullahan": {
+                evidence: ["Murchar", "Projetor de Laser", "Temperaturas Congelantes"],
+                description: "Dullahans, mais conhecidos como Cavaleiros sem Cabeça, são personagens lendários do folclore, frequentemente viajando longas distâncias em seus cavalos, podem ser muito perigosos quando decidem ficar por perto. Dullahans aparecem sem cabeça em fotos. Eles se movem mais rápido quanto mais tempo veem seu alvo."
+            },
+            "Dybbuk": {
+                evidence: ["Murchar", "Impressão Digital", "Temperaturas Congelantes"],
+                description: "Dybbuks são fantasmas maliciosos que têm um forte vínculo com possessão e perseguem um objetivo ou ideal específico antes de partir do plano mortal. Eles têm a habilidade única de interagir com cadáveres. Este tipo de fantasma é capaz de lançar cadáveres, o que pode ser uma boa pista de que é um Dybbuk."
+            },
+            "Entidade": {
+                evidence: ["Caixa de Espíritos", "Impressão Digital", "Projetor de Laser"],
+                description: "A Entidade é uma força poderosa que transcende assombrações típicas. Embora seu controle sobre o ambiente seja limitado, foi observado que ela teleporta, concedendo-lhe grande influência. Este tipo de fantasma tem a habilidade de teleportar de sala em sala, o que pode confundir os caçadores."
+            },
+            "Ghoul": {
+                evidence: ["Caixa de Espíritos", "Temperaturas Congelantes", "Orbe Fantasma"],
+                description: "Ghouls são considerados fantasmas perturbadores, mais focados em \"brincar\" do que machucar. Eles frequentemente se envolvem em comportamentos para assustar pessoas em sua vizinhança, mas também se irritam rapidamente. Exercite cautela quando na presença de um Ghoul. Ghouls podem ficar enfurecidos se ouvirem conversas."
+            },
+            "Keres": {
+                evidence: ["Murchar", "Impressão Digital", "Caixa de Espíritos"],
+                description: "Keres são melhor descritas como anjos da morte. Elas vagueiam com o objetivo de se alimentar das almas dos falecidos. Elas atacam os alvos mais fracos que são capazes de detectar. É melhor permanecer atento e manter altos níveis de energia ao lidar com uma Keres para evitar ser alvejado."
+            },
+            "Leviatã": {
+                evidence: ["Orbe Fantasma", "Impressão Digital", "Escrita Fantasma"],
+                description: "Leviatãs são manifestações físicas do caos e destruição, e são tão perigosos e imprevisíveis quanto você esperaria. Eles têm uma afinidade particular por lançar objetos. Leviatãs podem lançar múltiplos objetos e podem desativar luzes passivamente."
+            },
+            "Nightmare": {
+                evidence: ["EMF Nível 5", "Caixa de Espíritos", "Orbe Fantasma"],
+                description: "Nightmares, como o nome sugere, comumente se manifestam como maus sonhos e geralmente são inofensivos, no entanto nightmares particularmente poderosos podem se manifestar no mundo físico, exibindo muito do mesmo comportamento esperado de um fantasma comum."
+            },
+            "Oni": {
+                evidence: ["Projetor de Laser", "Caixa de Espíritos", "Temperaturas Congelantes"],
+                description: "Onis são uma classe de fantasma que se acredita originar no Japão, mas avistamentos foram relatados em todo o globo. Eles são conhecidos por se manifestarem frequentemente e terem uma aparência física aterrorizante. Onis correm durante as caçadas. Eles se manifestam mais comumente do que outros fantasmas."
+            },
+            "Phantom": {
+                evidence: ["EMF Nível 5", "Impressão Digital", "Orbe Fantasma"],
+                description: "Phantoms são aparições etéreas que se manifestam com menos frequência do que fantasmas similares. Eles são erroneamente atribuídos como \"tímidos\" e \"acanhados\", mas certamente podem ser agressivos. Eles são comumente associados e podem ser agravados por emoções intensas."
+            },
+            "Revenant": {
+                evidence: ["Escrita Fantasma", "EMF Nível 5", "Temperaturas Congelantes"],
+                description: "Revenants são altamente vingativos, frequentemente extraindo sua força não do medo, mas da raiva. Eles são implacáveis, caçando qualquer pessoa que tenham a oportunidade. Eles são imparáveis quando enfurecidos. Revenants têm um baixo tempo de recarga de caça."
+            },
+            "Shadow": {
+                evidence: ["EMF Nível 5", "Escrita Fantasma", "Projetor de Laser"],
+                description: "Shadows são aparições quase imperceptíveis que raramente interagem com seu ambiente, preferindo residir calmamente no escuro. Elas são tímidas e tendem a evitar pessoas, embora sejam conhecidas por serem defensivas de sua sala favorita."
+            },
+            "Siren": {
+                evidence: ["Murchar", "Caixa de Espíritos", "EMF Nível 5"],
+                description: "Sirens são mais conhecidas por sua voz cantada distinta que comumente usam para atrair marinheiros para sua morte, embora também tenham sido vistas vagueando longe do oceano. Fique atento à sua voz cantada distinta que você pode ouvir através da caixa de espíritos."
+            },
+            "Skinwalker": {
+                evidence: ["Temperaturas Congelantes", "Escrita Fantasma", "Caixa de Espíritos"],
+                description: "Skinwalkers são fantasmas elusivos com a habilidade única de imitar as habilidades de outros tipos de fantasmas. Eles são frequentemente andarilhos, passando mais tempo fora de sua sala favorita. Identificar Skinwalkers requer extrema precisão."
+            },
+            "Espectro": {
+                evidence: ["EMF Nível 5", "Temperaturas Congelantes", "Projetor de Laser"],
+                description: "Espectros estão fortemente ligados à sua sala favorita. Quando na mesma sala que um, muitos dizem sentir uma sensação sinistra de desconforto. Espectros são conhecidos por seu profundo controle sobre seu ambiente."
+            },
+            "Espírito": {
+                evidence: ["Impressão Digital", "Escrita Fantasma", "Caixa de Espíritos"],
+                description: "Espíritos são uma manifestação das almas dos falecidos. Eles são capazes de se projetar no mundo físico e foram observados manipulando frequências eletrônicas."
+            },
+            "Will-o-the-Wisp": {
+                evidence: ["Murchar", "Projetor de Laser", "Orbe Fantasma"],
+                description: "Um Will-o-the-Wisp, comumente conhecido como The Wisp ou apenas \"Wisp\" é um espírito que tipicamente assombra pântanos, mas recentemente foi observado invadindo casas e outros edifícios."
+            },
+            "Umbra": {
+                evidence: ["Orbe Fantasma", "Projetor de Laser", "Impressão Digital"],
+                description: "A homônima da Tábua Umbra, Umbras são aparições sombrias e elusivas nascidas do medo. Em vez de plantarem os pés, elas andam na ponta dos pés, não fazendo som algum ao caminhar. Sua presença é dita ser perturbadora."
+            },
+            "Vex": {
+                evidence: ["Murchar", "Orbe Fantasma", "Temperaturas Congelantes"],
+                description: "Um vex, embora não seja um fantasma no sentido tradicional, é uma presença que age como a personificação física da raiva e do descontentamento. Eles não ocupam o espaço físico da mesma maneira que esperaríamos de outros fantasmas."
+            },
+            "Wendigo": {
+                evidence: ["Orbe Fantasma", "Escrita Fantasma", "Projetor de Laser"],
+                description: "Wendigos são criaturas horrivelmente malformadas, menos fantasmas e mais caricaturas de monstros. Wendigos são incrivelmente temerosos do fogo, tornando velas e lanternas boas ferramentas para afastá-los - ainda assim, é melhor ser cauteloso."
+            },
+            "Wraith": {
+                evidence: ["EMF Nível 5", "Caixa de Espíritos", "Projetor de Laser"],
+                description: "Wraiths são aparições sombrias e malevolentes, notadas por sua profunda agressão. Eles são conhecidos por infligir um senso iminente de condenação nas pessoas ao seu redor."
+            }
+        };
+
+        // Estado
+        const evidenceState = {};
+        const ghostState = {};
+        let selectedGhost = null;
+
+        // Inicializar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEvidenceButtons();
+            initializeGhostButtons();
+            loadNotes();
+        });
+
+        // Criar botões de evidências
+        function initializeEvidenceButtons() {
+            const container = document.getElementById('evidence-container');
+            
+            Object.keys(evidenceData).forEach(evidence => {
+                const button = document.createElement('button');
+                button.className = 'evidence-btn';
+                button.textContent = evidence;
+                button.dataset.evidence = evidence;
+                
+                evidenceState[evidence] = 0;
+                
+                button.addEventListener('click', function() {
+                    handleEvidenceClick(evidence, button);
+                });
+                
+                button.addEventListener('mouseover', function() {
+                    showInfo(evidence, 'evidence');
+                });
+                
+                container.appendChild(button);
+            });
+        }
+
+        // Criar botões de fantasmas
+        function initializeGhostButtons() {
+            const container = document.getElementById('ghosts-container');
+            
+            Object.keys(ghostData).forEach(ghost => {
+                const button = document.createElement('button');
+                button.className = 'ghost-btn';
+                button.textContent = ghost;
+                button.dataset.ghost = ghost;
+                
+                ghostState[ghost] = 0;
+                
+                button.addEventListener('click', function() {
+                    handleGhostClick(ghost, button);
+                });
+                
+                button.addEventListener('mouseover', function() {
+                    showInfo(ghost, 'ghost');
+                });
+                
+                container.appendChild(button);
+            });
+        }
+
+        // Carregar anotações salvas
+        function loadNotes() {
+            const savedNotes = localStorage.getItem('ghostNotes');
+            if (savedNotes) {
+                document.getElementById('notes-textarea').value = savedNotes;
+            }
+            
+            document.getElementById('notes-textarea').addEventListener('input', function() {
+                localStorage.setItem('ghostNotes', this.value);
+            });
+        }
+
+        // Lidar com cliques em botões de evidência
+        function handleEvidenceClick(evidence, button) {
+            evidenceState[evidence] = (evidenceState[evidence] + 1) % 3;
+            
+            button.classList.remove('selected', 'excluded');
+            if (evidenceState[evidence] === 1) {
+                button.classList.add('selected');
+            } else if (evidenceState[evidence] === 2) {
+                button.classList.add('excluded');
+            }
+            
+            updateGhostVisibility();
+        }
+
+        // Lidar com cliques em botões de fantasmas
+        function handleGhostClick(ghost, button) {
+            if (ghostState[ghost] === 1) {
+                ghostState[ghost] = 2;
+                button.classList.remove('selected');
+                button.classList.add('crossed-out');
+                selectedGhost = null;
+            } else if (ghostState[ghost] === 2) {
+                ghostState[ghost] = 0;
+                button.classList.remove('crossed-out');
+            } else {
+                if (selectedGhost) {
+                    const prevButton = document.querySelector(`.ghost-btn[data-ghost="${selectedGhost}"]`);
+                    prevButton.classList.remove('selected');
+                    ghostState[selectedGhost] = 0;
+                }
+                
+                ghostState[ghost] = 1;
+                button.classList.add('selected');
+                selectedGhost = ghost;
+            }
+        }
+
+        // Atualizar visibilidade dos fantasmas
+        function updateGhostVisibility() {
+            const ghostButtons = document.querySelectorAll('.ghost-btn');
+            
+            ghostButtons.forEach(button => {
+                const ghost = button.dataset.ghost;
+                const ghostEvidence = ghostData[ghost].evidence;
+                
+                if (ghostState[ghost] === 2) {
+                    button.classList.add('crossed-out');
+                    button.classList.remove('greyed-out');
+                    return;
+                }
+                
+                button.classList.remove('greyed-out');
+                
+                for (const evidence in evidenceState) {
+                    const state = evidenceState[evidence];
+                    const hasEvidence = ghostEvidence.includes(evidence);
+                    
+                    if (state === 1 && !hasEvidence) {
+                        button.classList.add('greyed-out');
+                        break;
+                    }
+                    
+                    if (state === 2 && hasEvidence) {
+                        button.classList.add('greyed-out');
+                        break;
+                    }
+                }
+            });
+        }
+
+        // Mostrar informação
+        function showInfo(name, type) {
+            const infoContent = document.getElementById('info-content');
+            const placeholder = document.getElementById('default-placeholder');
+            
+            if (type === 'evidence') {
+                infoContent.innerHTML = `<h3>${name}</h3><p>${evidenceData[name]}</p>`;
+            } else {
+                const ghost = ghostData[name];
+                infoContent.innerHTML = `
+                    <h3>${name}</h3>
+                    <p><strong>Evidências:</strong> ${ghost.evidence.join(', ')}</p>
+                    <p>${ghost.description}</p>
+                `;
+            }
+            
+            infoContent.style.display = 'block';
+            placeholder.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
